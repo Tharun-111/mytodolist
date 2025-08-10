@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart To-Do List</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"], input[type="datetime-local"] {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 15px;
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    li {
+      background: #f8f8f8;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    li.completed {
+      text-decoration: line-through;
+      background: #dcdcdc;
+      color: #555;
+    }
+
+    .task-info {
+      flex-grow: 1;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-complete {
+      background: #28a745;
+    }
+
+    .btn-delete {
+      background: #dc3545;
+    }
+
+    .due-time {
+      font-size: 0.9em;
+      color: #555;
+    }
+
+    @media (max-width: 500px) {
+      .input-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📝 Smart To-Do List</h2>
+    <div class="input-group">
+      <input type="text" id="taskInput" placeholder="Enter task...">
+      <input type="datetime-local" id="dueInput">
+      <button onclick="addTask()">Add Task</button>
+    </div>
+
+    <ul id="taskList"></ul>
+  </div>
+
+  <script>
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+    function saveTasks() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function renderTasks() {
+      const list = document.getElementById('taskList');
+      list.innerHTML = '';
+      const now = new Date();
+
+      tasks.forEach((task, index) => {
+        const li = document.createElement('li');
+        if (task.completed) li.classList.add('completed');
+
+        const dueTime = new Date(task.due);
+        const timeString = dueTime.toLocaleString();
+
+        li.innerHTML = `
+          <div class="task-info">
+            <strong>${task.text}</strong><br>
+            <span class="due-time">Due: ${timeString}</span>
+          </div>
+          <div class="actions">
+            <button class="btn-complete" onclick="completeTask(${index})">✔</button>
+            <button class="btn-delete" onclick="deleteTask(${index})">🗑</button>
+          </div>
+        `;
+
+        list.appendChild(li);
+      });
+    }
+
+    function addTask() {
+      const text = document.getElementById('taskInput').value.trim();
+      const due = document.getElementById('dueInput').value;
+
+      if (!text || !due) {
+        alert('Please enter task and due time.');
+        return;
+      }
+
+      tasks.push({ text, due, completed: false });
+      saveTasks();
+      renderTasks();
+      document.getElementById('taskInput').value = '';
+      document.getElementById('dueInput').value = '';
+    }
+
+    function completeTask(index) {
+      tasks[index].completed = true;
+      saveTasks();
+      renderTasks();
+    }
+
+    function deleteTask(index) {
+      tasks.splice(index, 1);
+      saveTasks();
+      renderTasks();
+    }
+
+    function checkAlerts() {
+      const now = new Date();
+      tasks.forEach((task, index) => {
+        if (!task.completed) {
+          const due = new Date(task.due);
+          const diff = (due - now) / (1000 * 60); // in minutes
+
+          if (diff > 9 && diff < 11 && !task.alerted) {
+            alert(`⏰ Reminder: "${task.text}" is due in 10 minutes!`);
+            task.alerted = true;
+            saveTasks();
+          }
+        }
+      });
+    }
+
+    // Check every minute
+    setInterval(checkAlerts, 60000);
+
+    // Initial
+    renderTasks();
+  </script>
+</body>
+</html>
